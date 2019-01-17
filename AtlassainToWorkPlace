@@ -1,0 +1,109 @@
+var accesstoken = '';
+//FaceBook Bot post 
+  var addonkey = [
+    {key:"",name:"",Num:"",Hash:""}    
+  ];
+    
+  function acebook()
+{  
+    for (var x in addonkey){
+    
+    var appkey = addonkey[x].key;
+    var name = addonkey[x].name;
+    var number = addonkey[x].Num;
+    var hash = addonkey[x].Hash;
+
+  
+  var urlMarketplace = 'https://marketplace.atlassian.com/rest/2/addons/' + appkey +'/reviews?';
+  var response = UrlFetchApp.fetch(urlMarketplace);
+  var dataRaw = JSON.parse(response.getAs('application/json').getDataAsString());
+  var data_raw = dataRaw._embedded.reviews;
+  var link = dataRaw._links.alternate.href;
+  
+  var data = data_raw.map(function(d){
+    
+    //    var formattedDate = Utilities.formatDate(new Date(d.date), "GMT", "MM-dd-yyyy");
+    var formattedDate = new Date(d.date);
+    
+    return {
+      Star :  d.stars,                  
+      Hosting : d.hosting,               
+      Review : d.review,                 
+      Author : d._embedded.author.name,  
+      Date : formattedDate 
+      
+    };
+  });
+
+//get last timeStamp 
+  var sheet = SpreadsheetApp.getActive().getSheetByName('Cache');
+  var timeStamp = sheet.getRange(number,2).getValue();
+ 
+
+  //    var formattedtimeStamp = Utilities.formatDate(new Date(timeStamp), "GMT", "MM-dd-yyyy");
+  var formattedtimeStamp = new Date(timeStamp);
+
+    var NewReview_date = data.filter(function(date){
+      var date1 = date.Date;
+      var date2 = formattedtimeStamp;
+      var isittrue = date.Date.getTime() > formattedtimeStamp.getTime();
+      return isittrue;
+      
+  });
+
+  if(Array.isArray(NewReview_date) && NewReview_date.length){
+    
+    for (var i in NewReview_date){
+      var url = 'https://graph.facebook.com/v3.0/group/feed?access_token='+accesstoken;
+      var links ="https://marketplace.atlassian.com"+link+"&hosting="+ NewReview_date[i].Hosting;
+      var repeatedString = "";
+      var stars_star = NewReview_date[i].Star;
+      var star_num = NewReview_date[i].Star;
+      var hosting = NewReview_date[i].Hosting;
+      var review = NewReview_date[i].Review;
+      var author = NewReview_date[i].Author;
+      var date = NewReview_date[i].Date;
+      
+      
+      while (stars_star > 0){ 
+        repeatedString += "⭐️"; 
+        stars_star--;
+      }
+      var data ={
+        "message": "# " + star_num + "-star review for " + name + " (" + hosting + ")\n"+ repeatedString +"\n" + ">"+ review + "\n" + "\n"  + "["+ author + ", " + date +"]"+"("+links+")" +"\n"+"#"+hash+" #" + hosting+" #"+star_num+"stars",
+        "formatting": "MARKDOWN"
+      };
+  
+      var options ={
+        'method' : 'post',
+        'contentType': 'application/json',
+        // Convert the JavaScript object to a JSON string.
+        'payload' : JSON.stringify(data)
+      };
+      
+      var response1 = UrlFetchApp.fetch(url, options);
+      
+      if(response1.getResponseCode() == 200){
+        Logger.log("success");
+        var sheet1 = SpreadsheetApp.getActive().getSheetByName('Cache');
+        var new_timeStamp = new Date();
+        sheet1.getRange(number,2).setValue(new_timeStamp);
+        Logger.log(new_timeStamp);
+      }
+      else
+      {
+        Logger.log("Why!");
+      }
+      
+    } 
+  }
+  else{
+      var sheet2 = SpreadsheetApp.getActive().getSheetByName('Cache');
+      var new_timeStamp = new Date();
+      sheet2.getRange(number,2).setValue(new_timeStamp);
+      }
+}
+}
+
+
+
