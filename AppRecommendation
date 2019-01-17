@@ -1,0 +1,52 @@
+function recommendMain() {
+  // ----------------------------------------- INPUTS -----------------------------------------
+  var appKey = '';
+  // Select the category you are interested in from this list: https://marketplace.atlassian.com/rest/2/addons?category.
+  var category = 'Macros';
+  // Select the application you are interested in: valid fields are the "key"s in https://marketplace.atlassian.com/rest/2/applications
+  var application = 'confluence';
+  // ------------------------------------------------------------------------------------------
+ 
+  
+  var url = 'https://marketplace.atlassian.com/rest/2/addons?application=' + application + '&category=' + category;
+  var addons = offsetRequest(url,1000,function(d){
+    return d._embedded.addons;
+  });
+  
+ 
+  // get keys from the category search
+  var keys = extractRecommendKeys(addons);
+  
+  // get all keys from recommended apps of each category apps  
+  var recommendations = keys.map(function(key){
+   
+    
+    var recUrl = 'https://marketplace.atlassian.com/rest/2/addons/'+ key +'/recommendations/?';
+    
+    return offsetRequest(recUrl,10,function(d){
+      return d._embedded.addons;
+      }).map(function(rec){
+      return rec.key;
+    });
+  });
+  
+  
+  writeRecommendData(recommendations, appKey);
+  Logger.log(recommendations);
+}
+
+
+function extractRecommendKeys(addons){
+  return addons.map(function(addon) {
+    return addon.key;
+  });
+}
+
+function writeRecommendData(recommendations, appKey) {
+  const appsInCategory = recommendations.length;
+  const recommendedIn = recommendations.filter(function(recs){
+    return recs.indexOf(appKey) > -1;
+  }).length;
+  var sheet1 = SpreadsheetApp.getActive().getSheetByName('recommend');
+  sheet1.getRange(1, 1 , 2 , 2)
+  .setValues([['Apps in category','Recommended in'],[appsInCategory,recommendedIn]]);
