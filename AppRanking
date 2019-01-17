@@ -1,0 +1,48 @@
+function searchMain() { 
+  var AppKey = [{}];
+    
+  var keyResults = dataKeyScaffolding.map(function(data){
+    var result = data.keywords.map(function(keywordData){
+      var url = 'https://marketplace.atlassian.com/rest/2/addons/search/brief?q=' + keywordData.keyword;
+      var response = UrlFetchApp.fetch(url);
+      var rankingData = JSON.parse(response.getAs('application/json').getDataAsString());
+      var addonsArray = rankingData.addons;
+      
+      var keyArray = addonsArray.map(function(addon) {
+        return addon.key;
+      });
+
+      var apiResult = keyArray.indexOf(data.key);
+      keywordData.value = apiResult < 1 ? apiResult + 1 : apiResult;
+      return keywordData.value;
+    });
+    return result;
+  });
+        
+   var newArr = [];
+   for(var i = 0; i < keyResults.length; i++)
+{
+    newArr = newArr.concat(keyResults[i]);
+}
+                           
+Logger.log(keyResults)    
+
+Logger.log(newArr.length)                            
+ 
+ 
+  // gets sheet name 
+   var sheet1 = SpreadsheetApp.getActive().getSheetByName('SearchKeyrank');
+
+   var date = new Date();
+   var Datepr = Utilities.formatDate(date, 'Asia/Kuala_Lumpur','dd MMM yyyy');  
+   
+  var newRow = sheet1.getLastRow();
+  var newCol = sheet1.getLastColumn();
+  
+   sheet1.getRange(newRow+1,1).setValues([[Datepr]]);
+
+   sheet1.getRange(newRow+1,2,1,newArr.length).setValues([newArr]);
+
+ 
+
+}
