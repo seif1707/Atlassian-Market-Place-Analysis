@@ -1,0 +1,32 @@
+function marketshare22Main() {
+  // ----------------------------------------- INPUTS -----------------------------------------
+  // Select the category you are interested in from this list: https://marketplace.atlassian.com/rest/2/addons?category
+  var category = 'Macros';
+  // Select the application you are interested in: valid fields are the "key"s in https://marketplace.atlassian.com/rest/2/applications
+  var application = 'confluence';
+  // ------------------------------------------------------------------------------------------
+  
+  var url = 'https://marketplace.atlassian.com/rest/2/addons?application=' + application + '&category=' + category;
+  var response = UrlFetchApp.fetch(url);
+  var Rank_Response = JSON.parse(response.getAs('application/json').getDataAsString());
+
+  var Addonsarray = Rank_Response._embedded.addons;
+  var Keysearcharray = Addonsarray.map(function(addon){
+       return addon.key;
+  });
+  var keysearchRank = Keysearcharray.indexOf(appKey);
+      writeSearchRanking(keysearchRank,category);
+
+function extractMarketshareData(addons){
+  return addons.map(function(addon) {
+    return [addon._embedded.vendor.name,addon.name || 0, addon._embedded.distribution.totalInstalls || 0, addon._embedded.reviews.averageStars ||0, addon._embedded.reviews.count];
+  });
+}
+
+function writeMarketshareData22(data) {
+  var sheet1 = SpreadsheetApp.getActive().getSheetByName('confluence');
+  data.unshift(['Vendor','App','Installs','AverageStars','Count']);
+  sheet1.getRange(1, 1, data.length, 5)
+                    .setValues(data);
+}
+}
